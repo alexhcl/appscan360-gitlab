@@ -1,0 +1,109 @@
+# HCL AppScan 360° - shared base for all scan templates (included by appscan360_scan_*.yaml).
+#
+# ALL configuration lives here and in the scan templates. A project never needs to copy anything:
+#   .gitlab-ci.yml of a project:
+#     include:
+#       - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_sast.yaml'
+#   or attach these templates via a compliance framework so no project file is touched at all.
+#
+# Overriding a value for one group/project: set a CI/CD variable of the same name in the GitLab UI
+# (Settings > CI/CD > Variables). UI variables take precedence over the defaults below.
+#
+# Secrets (never in this file): APPSCAN_SERVICE_URL, APPSCAN_KEY, APPSCAN_SECRET, APPSCAN_ASSET,
+#   GITHUB_TOKEN (private central repo), DAST_LOGIN_PASSWORD / DAST_API_KEYS / DAST_OTP_SECRET when needed.
+#
+# Where the integration scripts come from (APPSCAN_SCRIPTS_SOURCE):
+#   git     (default) cloned at job start from $APPSCAN_SCRIPTS_GIT_URL (ref $APPSCAN_SCRIPTS_GIT_REF)
+#   repo    committed in the scanned project under $APPSCAN_SCRIPTS_DIR
+#   runner  pre-installed on the runner host / in the job image at $APPSCAN_SCRIPTS_DIR (see Dockerfile)
+
+variables:
+  # ---- runner: the job must run on a runner that can reach the AppScan 360° host.
+  #      Either disable instance/shared runners for the project, or tag your runner and set this:
+  APPSCAN_RUNNER_TAG: ""                              # e.g. "appscan"
+
+  # ---- where the integration scripts come from
+  APPSCAN_SCRIPTS_SOURCE: "git"                       # git | repo | runner
+  APPSCAN_SCRIPTS_GIT_URL: "https://github.com/alexhcl/appscan360-gitlab.git"
+  # APPSCAN_SCRIPTS_GIT_URL: "https://${GITHUB_TOKEN}@github.com/alexhcl/appscan360-gitlab.git"   # private repo
+  APPSCAN_SCRIPTS_GIT_REF: "v1"                     # pin to a tag (v1.0) once stable
+  # APPSCAN_SCRIPTS_DIR: "appscan360"                 # only for repo/runner
+
+  # ---- AppScan 360° connection (URL/key/secret come from CI/CD variables)
+  APPSCAN_AUTH_MODE: "token"                          # token (ApiKeyLogin) | direct (X-Api-Key)
+  APPSCAN_ACCEPT_UNTRUSTED_SSL: "yes"                 # "no" once the certificate is trusted
+  # APPSCAN_CA_BUNDLE: "$APPSCAN_CA_PEM"              # file-type CI variable with the CA PEM
+  APPSCAN_HTTP_TIMEOUT: "60"
+
+  # ---- application
+  APPSCAN_APP_ID: ""                                  # existing application id: used as-is, never created (wins over APP_NAME)
+  APPSCAN_APP_NAME: $CI_PROJECT_NAME                  # else: look up by name, create in APPSCAN_ASSET if missing
+  # APPSCAN_BUSINESS_IMPACT: "High"                   # Low | Medium | High | Critical (on create)
+
+  # ---- scan naming / behaviour
+  APPSCAN_SCAN_NAME: $CI_PROJECT_NAME-$CI_JOB_ID
+  APPSCAN_SCAN_COMMENT: "Triggered by GitLab pipeline $CI_PIPELINE_ID"
+  APPSCAN_PERSONAL_SCAN: "no"                         # personal scan = does not affect app issues/compliance
+  APPSCAN_WAIT: "yes"                                 # wait for completion (needed for reports/gates)
+  APPSCAN_POLL_SECONDS: "30"
+  APPSCAN_TIMEOUT_MINUTES: "360"
+  # APPSCAN_RESCAN_ID: ""                             # re-execute an existing scan instead of creating one
+  APPSCAN_DEBUG: "no"
+
+  # ---- reports (job artifacts) : html,pdf,xml,csv,sarif,json,gitlab  (+ license,sbom for SCA)
+  APPSCAN_REPORT_FORMATS: "html,xml,gitlab"
+  APPSCAN_REPORT_APPLY_POLICIES: "None"               # None | All | Select
+  APPSCAN_SBOM_FORMAT: "SPDX_Json"                    # SPDX_Json | SPDX_Text | CycloneDX_Json | CycloneDX_XML
+
+  # ---- security gates : severity,threshold,branch,compliance,license
+  APPSCAN_GATES: "severity"
+  APPSCAN_SEV_SEC_GW: "criticalIssues"                # criticalIssues|highIssues|mediumIssues|lowIssues|totalIssues
+  APPSCAN_MAX_ISSUES_ALLOWED: "0"                     # fail if more than this many
+  APPSCAN_FAILURE_THRESHOLD: "High"                   # threshold gate: fail on any issue >= this severity
+  APPSCAN_GATE_ALLOW_FAILURE: "no"                    # yes = report only, never fail the job
+
+  GIT_DEPTH: "2"                                      # needed for SAST_LATEST_COMMIT_ONLY
+
+.appscan360_base:
+  image: python:3.12-slim                    # or your `appscan360-runner` image built from the Dockerfile
+  variables:
+    PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  tags:
+    - $APPSCAN_RUNNER_TAG                     # "" = any runner; set to your runner's tag to force it (see below)
+  before_script:
+    - |
+      set -e
+      # tools needed by the integration (python:3.12-slim has neither git nor unzip)
+      if ! command -v git >/dev/null || ! command -v unzip >/dev/null; then
+        if command -v apt-get >/dev/null; then
+          apt-get update -qq && apt-get install -y -qq --no-install-recommends git unzip ca-certificates curl >/dev/null
+        elif command -v apk >/dev/null; then apk add --no-cache git unzip curl >/dev/null
+        elif command -v yum >/dev/null; then yum install -y -q git unzip curl >/dev/null
+        fi
+      fi
+      case "$APPSCAN_SCRIPTS_SOURCE" in
+        git)
+          echo "Fetching AppScan 360° scripts from $APPSCAN_SCRIPTS_GIT_URL@$APPSCAN_SCRIPTS_GIT_REF"
+          rm -rf .appscan360-scripts
+          git clone --depth 1 --branch "$APPSCAN_SCRIPTS_GIT_REF" "$APPSCAN_SCRIPTS_GIT_URL" .appscan360-scripts
+          export APPSCAN_SCRIPTS_DIR="$CI_PROJECT_DIR/.appscan360-scripts" ;;
+        runner)
+          echo "Using scripts pre-installed on the runner at $APPSCAN_SCRIPTS_DIR" ;;
+        repo|*)
+          case "$APPSCAN_SCRIPTS_DIR" in /*) ;; *) export APPSCAN_SCRIPTS_DIR="$CI_PROJECT_DIR/$APPSCAN_SCRIPTS_DIR" ;; esac ;;
+      esac
+      test -f "$APPSCAN_SCRIPTS_DIR/appscan360.py" || { echo "appscan360.py not found in $APPSCAN_SCRIPTS_DIR"; exit 1; }
+      python3 -c "import requests" 2>/dev/null || pip install -q -r "$APPSCAN_SCRIPTS_DIR/requirements.txt"
+      export AS360="python3 $APPSCAN_SCRIPTS_DIR/appscan360.py"
+      echo "AppScan 360° host: $APPSCAN_SERVICE_URL  app: $APPSCAN_APP_NAME  scan: $APPSCAN_SCAN_NAME  gates: $APPSCAN_GATES ($APPSCAN_SEV_SEC_GW <= $APPSCAN_MAX_ISSUES_ALLOWED)"
+  artifacts:
+    when: always
+    paths:
+      - "*_report.html"
+      - "*_report.pdf"
+      - "*_report.xml"
+      - "*_issues.*"
+      - "SCA_sbom.*"
+      - ".appscan360/dast_payload.json"
+      - ".appscan360/*.irx"
+      - ".appscan360/presence.log"

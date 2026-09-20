@@ -1,0 +1,14 @@
+# Compliance-framework pipeline (GitLab Premium/Ultimate): Group > Secure > Compliance center >
+# Frameworks > "Compliance pipeline configuration" = .compliance.yml@<project holding this file>.
+# Every project the framework is applied to runs the AppScan scans without any .gitlab-ci.yml change.
+include:
+  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_sast.yaml'
+  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_sca.yaml'
+  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_dast.yaml'
+  # keep the project's own pipeline as well:
+  - project: '$CI_PROJECT_PATH'
+    file: '$CI_CONFIG_PATH'
+    ref: '$CI_COMMIT_SHA'
+    rules:
+      - exists:
+          - '$CI_CONFIG_PATH'

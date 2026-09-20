@@ -1,0 +1,31 @@
+# One pipeline running SAST + SCA in parallel, then DAST against a review deployment.
+include:
+  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_base.yaml'
+
+stages: [security, dast]
+
+sast:
+  extends: .appscan360_base
+  stage: security
+  variables: { SAST_UPLOAD_MODE: "zip", APPSCAN_GATES: "threshold", APPSCAN_FAILURE_THRESHOLD: "High" }
+  script: [ "$AS360 app", "$AS360 sast", "$AS360 report", "$AS360 gate" ]
+
+sca:
+  extends: .appscan360_base
+  stage: security
+  image: appscan360-runner          # image from the Dockerfile (has SAClientUtil + docker CLI)
+  variables: { SCA_SOURCE: "image", SCA_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA", APPSCAN_GATES: "severity,license" }
+  script: [ "$AS360 app", "$AS360 sca", "$AS360 report", "$AS360 gate" ]
+
+dast:
+  extends: .appscan360_base
+  stage: dast
+  variables:
+    DAST_URL: "http://app:8080"
+    DAST_EPHEMERAL_PRESENCE: "yes"  # app only reachable from the runner -> temporary Presence
+    DAST_LOGIN_METHOD: "userpass"
+    DAST_LOGIN_USER: "jsmith"
+    DAST_LOGIN_PASSWORD: "$DAST_PASSWORD"
+    APPSCAN_GATES: "severity,compliance"
+  services: [ { name: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA", alias: app } ]
+  script: [ "$AS360 app", "$AS360 dast", "$AS360 report", "$AS360 gate" ]

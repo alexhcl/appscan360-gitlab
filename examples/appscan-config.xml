@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Optional SAST configuration. In IRX mode pass it with SAST_CONFIG_FILE; in zip mode place it at the
+     archive root: 360° honours sourceCodeOnly=true for Java archives (otherwise bytecode DFA is used). -->
+<Configuration enableSecrets="true" sourceCodeOnly="false" staticAnalysisOnly="true">
+  <Targets>
+    <Target path=".">
+      <Exclude>**/test/**</Exclude>
+      <Exclude>**/node_modules/**</Exclude>
+    </Target>
+  </Targets>
+</Configuration>

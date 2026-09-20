@@ -1,0 +1,48 @@
+# DAST API scan - Postman collection, OpenAPI definition, or recorded API traffic. Include this one line in a project's .gitlab-ci.yml (nothing else needed):
+#   include:
+#     - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_dast_api.yaml'
+# Override any value below with a CI/CD variable of the same name (group or project level).
+include:
+  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_base.yaml'
+
+stages:
+  - scan-dast
+
+appscan360-dast-api:
+  extends: .appscan360_base
+  stage: scan-dast
+  needs: []
+  variables:
+    DAST_MODE: "api"
+    DAST_API_METHOD: "openapi"          # postman | openapi | traffic
+    DAST_API_BASE_URL: "https://api.example.com"
+    DAST_API_DOMAINS: "api.example.com"
+    DAST_OPENAPI_FILE: "openapi.yaml"   # or DAST_OPENAPI_URL
+    DAST_OPENAPI_URL: ""
+    DAST_API_KEYS: "$DAST_API_KEYS"     # "X-Api-Key=abc,Other=xyz" masked variable
+    DAST_POSTMAN_COLLECTION: ""         # collection.json
+    DAST_POSTMAN_ENV: ""
+    DAST_POSTMAN_GLOBALS: ""
+    DAST_POSTMAN_LINKED_FILES: ""       # zip
+    DAST_EXPLORE_FILES: ""              # recorded API traffic (.dast.config) for method=traffic
+    DAST_LOGIN_METHOD: "none"
+    DAST_LOGIN_FILE: ""
+    DAST_PRESENCE_ID: ""
+    DAST_TEST_POLICY_ID: ""
+    DAST_OPTIMIZATION: "Fast"
+    APPSCAN_GATES: "severity"
+    DAST_LOGIN_FILE: ""
+    DAST_EXCLUDE_PATHS: ""
+    DAST_ADDITIONAL_DOMAINS: ""
+    DAST_THREADS: "10"
+    DAST_SCAN_PRIORITY: "Regular"
+    DAST_EPHEMERAL_PRESENCE: "no"
+    DAST_PAYLOAD_JSON: ""
+  artifacts:
+    reports:
+      dast: gl-dast-report.json
+  script:
+    - $AS360 app
+    - $AS360 dast
+    - $AS360 report
+    - $AS360 gate $APPSCAN_GATES

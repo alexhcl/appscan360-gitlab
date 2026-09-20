@@ -1,0 +1,33 @@
+# SCA scan (open-source composition). Include this one line in a project's .gitlab-ci.yml (nothing else needed):
+#   include:
+#     - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_sca.yaml'
+# Override any value below with a CI/CD variable of the same name (group or project level).
+include:
+  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_base.yaml'
+
+stages:
+  - scan-sca
+
+appscan360-sca:
+  extends: .appscan360_base
+  stage: scan-sca
+  needs: []
+  # image: appscan360-runner             # image built from the Dockerfile (SAClientUtil + docker CLI) - required for image/container
+  variables:
+    SCA_SOURCE: "source"                 # source | image | container | sbom
+    SCA_IMAGE: ""                        # docker image name/digest/archive  (SCA_SOURCE=image)
+    SCA_CONTAINER: ""                    # running container id           (SCA_SOURCE=container)
+    SCA_SBOM_FILE: ""                    # SPDX 2.3 json                    (SCA_SOURCE=sbom)
+    SCA_CONSIDER_PKG_MANAGER: "yes"      # no = -nc ignore package-manager files
+    SCA_FAIL_LICENSE_RISK: "High"        # license gate: comma list of risk levels that fail (High,Medium)
+    APPSCAN_REPORT_FORMATS: "html,xml,gitlab,license,sbom"
+    APPSCAN_SBOM_FORMAT: "SPDX_Json"     # SPDX_Json | SPDX_Text | CycloneDX_Json | CycloneDX_XML
+    APPSCAN_GATES: "severity,license"
+  artifacts:
+    reports:
+      dependency_scanning: gl-dependency-scanning-report.json
+  script:
+    - $AS360 app
+    - $AS360 sca
+    - $AS360 report
+    - $AS360 gate $APPSCAN_GATES
