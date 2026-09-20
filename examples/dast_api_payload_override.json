@@ -1,0 +1,7 @@
+{
+  "_comment": "Deep-merged into the POST /api/v4/Scans/Dast body (NewDastScan schema from as360_swagger.json). Use it for fields the CLI does not expose, e.g. Recurrence or ScanConfiguration.Llm.",
+  "ScanPriority": "High",
+  "ScanConfiguration": {
+    "Tests": { "CustomTestPolicyId": "00000000-0000-0000-0000-000000000000" }
+  }
+}
