@@ -1,22 +1,21 @@
 # ============================================================================================
-# OPTION A - central repo is a PRIVATE project in the SAME GitLab instance as the scanned projects.
-# Group-level CI/CD variables:
-#   APPSCAN_TEMPLATES_PROJECT = security/appscan360-gitlab
-#   APPSCAN_TEMPLATES_REF     = v1
-#   APPSCAN_SCRIPTS_GIT_URL   = https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/security/appscan360-gitlab.git
-#   APPSCAN_SCRIPTS_GIT_REF   = v1
-# Central project: Settings > CI/CD > Job token permissions -> allow the consuming group.
+# OPTION B - central repo is a PRIVATE project on a DIFFERENT (remote) GitLab instance.
+# Central project: Settings > Access tokens -> role Reporter, scopes read_api + read_repository.
+# Group-level CI/CD variables (mask the token):
+#   APPSCAN_TEMPLATES_URL   = https://gitlab.remote.com/security/appscan360-gitlab/-/raw/v1
+#   APPSCAN_TEMPLATES_TOKEN = glpat-xxxxxxxx
+#   APPSCAN_SCRIPTS_GIT_URL = https://oauth2:glpat-xxxxxxxx@gitlab.remote.com/security/appscan360-gitlab.git
+#   APPSCAN_SCRIPTS_GIT_REF = v1
+# Project .gitlab-ci.yml:
+#   include:
+#     - remote: '$APPSCAN_TEMPLATES_URL/yaml-gitlab-remote-private/appscan360_scan_sast.yaml?private_token=$APPSCAN_TEMPLATES_TOKEN'
 # ============================================================================================
 # DAST API scan - Postman collection, OpenAPI definition, or recorded API traffic. Include this one line in a project's .gitlab-ci.yml (nothing else needed):
 #   include:
-#     - project: '$APPSCAN_TEMPLATES_PROJECT'
-#       ref: '$APPSCAN_TEMPLATES_REF'
-#       file: 'yaml-gitlab-private/appscan360_scan_dast_api.yaml'
+#     - remote: '$APPSCAN_TEMPLATES_URL/yaml-gitlab-remote-private/appscan360_scan_dast_api.yaml?private_token=$APPSCAN_TEMPLATES_TOKEN'
 # Override any value below with a CI/CD variable of the same name (group or project level).
 include:
-  - project: '$APPSCAN_TEMPLATES_PROJECT'   # group/instance CI/CD variables, e.g. security/appscan360-gitlab
-    ref: '$APPSCAN_TEMPLATES_REF'           # e.g. v1
-    file: 'yaml-gitlab-private/appscan360_base.yaml'
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml-gitlab-remote-private/appscan360_base.yaml?private_token=$APPSCAN_TEMPLATES_TOKEN'   # <<< B token added
 
 stages:
   - scan-dast

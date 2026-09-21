@@ -1,0 +1,7 @@
+# Project pipeline when the central repo is a PRIVATE project on a DIFFERENT GitLab instance.
+# Group variables: APPSCAN_TEMPLATES_URL, APPSCAN_TEMPLATES_TOKEN (masked), APPSCAN_SCRIPTS_GIT_URL
+# (https://oauth2:<token>@gitlab.remote.com/.../appscan360-gitlab.git), APPSCAN_SCRIPTS_GIT_REF,
+# plus APPSCAN_SERVICE_URL / APPSCAN_KEY / APPSCAN_SECRET.
+include:
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml-gitlab-remote-private/appscan360_scan_sast.yaml?private_token=$APPSCAN_TEMPLATES_TOKEN'
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml-gitlab-remote-private/appscan360_scan_dast.yaml?private_token=$APPSCAN_TEMPLATES_TOKEN'

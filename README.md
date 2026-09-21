@@ -34,7 +34,14 @@ examples/                 appscan-config.xml, API payload override, all-in-one p
    Defaults for every setting are in `yaml/appscan360_base.yaml` (global) and `yaml/appscan360_scan_*.yaml` (per scan). To change a value for one project set a CI/CD variable of the same name in the GitLab UI (e.g. `DAST_URL`, `APPSCAN_MAX_ISSUES_ALLOWED`); to change it for everyone edit the template in GitHub.
 5. Register a runner (Docker executor) that can reach both GitHub/GitLab and the 360° host.
 
-Moving the central repo later = changing the three group variables; no file changes. **Private GitLab project as central repo:** use the templates in `yaml-gitlab-private/` (`include: project:` with `$APPSCAN_TEMPLATES_PROJECT` / `$APPSCAN_TEMPLATES_REF`, see `examples/project-gitlab-ci-private-gitlab.yml`), clone with `gitlab-ci-token:${CI_JOB_TOKEN}@…`, and allow the consuming group in the central project's Job token permissions. Private repo: the job clone works with a token in `APPSCAN_SCRIPTS_GIT_URL`, but GitLab's `include: remote:` cannot authenticate, so keep the templates readable (public repo, or a GitLab project in the same instance using `include: project:` with `$APPSCAN_TEMPLATES_PROJECT`/`ref`).
+Moving the central repo later = changing the three group variables; no file changes. **Private central repo — three template sets, same content:**
+| Central repo | Folder | Auth |
+|---|---|---|
+| public (GitHub/GitLab) | `yaml/` | none |
+| private, same GitLab instance (Option A) | `yaml-gitlab-private/` | GitLab permissions + `CI_JOB_TOKEN` |
+| private, other GitLab instance (Option B) | `yaml-gitlab-remote-private/` | project access token via `?private_token=$APPSCAN_TEMPLATES_TOKEN` |
+
+Option A details: use the templates in `yaml-gitlab-private/` (`include: project:` with `$APPSCAN_TEMPLATES_PROJECT` / `$APPSCAN_TEMPLATES_REF`, see `examples/project-gitlab-ci-private-gitlab.yml`), clone with `gitlab-ci-token:${CI_JOB_TOKEN}@…`, and allow the consuming group in the central project's Job token permissions. Private repo: the job clone works with a token in `APPSCAN_SCRIPTS_GIT_URL`, but GitLab's `include: remote:` cannot authenticate, so keep the templates readable (public repo, or a GitLab project in the same instance using `include: project:` with `$APPSCAN_TEMPLATES_PROJECT`/`ref`).
 
 Alternatives: `APPSCAN_SCRIPTS_SOURCE=repo` (commit `appscan360/` + `yaml/` into the project) or `runner` (Dockerfile image with scripts at `/opt/appscan360`).
 
