@@ -1,9 +1,13 @@
 # SCA scan (open-source composition). Include this one line in a project's .gitlab-ci.yml (nothing else needed):
 #   include:
-#     - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_sca.yaml'
+#     - project: '$APPSCAN_TEMPLATES_PROJECT'
+#       ref: '$APPSCAN_TEMPLATES_REF'
+#       file: 'yaml-gitlab-private/appscan360_scan_sca.yaml'
 # Override any value below with a CI/CD variable of the same name (group or project level).
 include:
-  - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_base.yaml'   # APPSCAN_TEMPLATES_URL = group/instance CI/CD variable
+  - project: '$APPSCAN_TEMPLATES_PROJECT'   # group/instance CI/CD variables, e.g. security/appscan360-gitlab
+    ref: '$APPSCAN_TEMPLATES_REF'           # e.g. v1
+    file: 'yaml-gitlab-private/appscan360_base.yaml'
 
 stages:
   - scan-sca

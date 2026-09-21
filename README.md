@@ -14,11 +14,14 @@ examples/                 appscan-config.xml, API payload override, all-in-one p
 
 ## 1. Setup (central repo on GitHub, one file per project)
 
-1. Push this folder to GitHub, e.g. `github.com/alexhcl/appscan360-gitlab`. If your repo has another name run `./set-origin.sh <owner/repo> [tag]` first: it rewrites every URL in the templates and pipeline file.
+1. Push this folder to GitHub or GitLab (any location) and tag it, e.g. `v1`. Nothing in the files depends on the location.
 2. In AppScan 360°: **Settings → API** → generate Key ID / Secret; note an **asset group id**.
 3. In GitLab, at **group** level (Settings → CI/CD → Variables, masked) so every project inherits them:
    | Variable | Value |
    |---|---|
+   | `APPSCAN_TEMPLATES_URL` | raw base URL of the central repo at a ref, e.g. `https://raw.githubusercontent.com/<owner>/appscan360-gitlab/v1` or `https://gitlab.example.com/<group>/appscan360-gitlab/-/raw/v1` |
+   | `APPSCAN_SCRIPTS_GIT_URL` | clone URL, e.g. `https://github.com/<owner>/appscan360-gitlab.git` (GitLab: `https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/<group>/appscan360-gitlab.git`) |
+   | `APPSCAN_SCRIPTS_GIT_REF` | `v1` |
    | `APPSCAN_SERVICE_URL` | `https://appscan360.example.com` |
    | `APPSCAN_KEY` / `APPSCAN_SECRET` | API key id / secret |
    | `APPSCAN_ASSET` | asset group id |
@@ -26,12 +29,12 @@ examples/                 appscan-config.xml, API payload override, all-in-one p
    | `APPSCAN_CA_BUNDLE` *(optional)* | file variable with the CA PEM |
 4. Projects need **nothing copied**. Either
    * add one line to the project's `.gitlab-ci.yml` (see `examples/project-gitlab-ci.yml`):
-     `include: - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_sast.yaml'`
+     `include: - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_sast.yaml'`
    * or (Premium/Ultimate) attach `examples/compliance-framework.yml` as a compliance-framework pipeline so every project in the group runs the scans with no file change at all.
    Defaults for every setting are in `yaml/appscan360_base.yaml` (global) and `yaml/appscan360_scan_*.yaml` (per scan). To change a value for one project set a CI/CD variable of the same name in the GitLab UI (e.g. `DAST_URL`, `APPSCAN_MAX_ISSUES_ALLOWED`); to change it for everyone edit the template in GitHub.
 5. Register a runner (Docker executor) that can reach both GitHub/GitLab and the 360° host.
 
-Private GitHub repo: the job clone works with `https://${GITHUB_TOKEN}@github.com/...` (line provided in the pipeline file), but GitLab's `include: remote:` cannot authenticate to raw.githubusercontent.com, so either keep the repo public (it holds no secrets) or mirror it into GitLab and use `include: project:`.
+Moving the central repo later = changing the three group variables; no file changes. **Private GitLab project as central repo:** use the templates in `yaml-gitlab-private/` (`include: project:` with `$APPSCAN_TEMPLATES_PROJECT` / `$APPSCAN_TEMPLATES_REF`, see `examples/project-gitlab-ci-private-gitlab.yml`), clone with `gitlab-ci-token:${CI_JOB_TOKEN}@…`, and allow the consuming group in the central project's Job token permissions. Private repo: the job clone works with a token in `APPSCAN_SCRIPTS_GIT_URL`, but GitLab's `include: remote:` cannot authenticate, so keep the templates readable (public repo, or a GitLab project in the same instance using `include: project:` with `$APPSCAN_TEMPLATES_PROJECT`/`ref`).
 
 Alternatives: `APPSCAN_SCRIPTS_SOURCE=repo` (commit `appscan360/` + `yaml/` into the project) or `runner` (Dockerfile image with scripts at `/opt/appscan360`).
 

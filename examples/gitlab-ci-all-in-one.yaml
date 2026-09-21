@@ -1,6 +1,6 @@
 # One pipeline running SAST + SCA in parallel, then DAST against a review deployment.
 include:
-  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_base.yaml'
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_base.yaml'
 
 stages: [security, dast]
 

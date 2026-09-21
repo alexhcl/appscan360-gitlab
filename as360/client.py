@@ -173,9 +173,32 @@ class AS360Client:
         return fid
 
     # ------------------------------------------------------------ apps / asset groups
+    def asset_groups(self) -> list:
+        return self.items(self.get("AssetGroups", **{"$top": 500}))
+
     def asset_group_exists(self, asset_group_id: str) -> bool:
-        groups = self.items(self.get("AssetGroups"))
-        return any(g.get("Id") == asset_group_id for g in groups)
+        return any(g.get("Id") == asset_group_id for g in self.asset_groups())
+
+    def resolve_asset_group(self, id_or_name: str | None) -> str | None:
+        """Accept an asset group Id or Name; '' / None -> the default asset group if the API flags one."""
+        groups = self.asset_groups()
+        if not id_or_name:
+            default = next((g for g in groups if g.get("IsDefault")), None)
+            if default:
+                log(f"Using default asset group '{default.get('Name')}' ({default['Id']})")
+                return default["Id"]
+            if len(groups) == 1:
+                log(f"Using the only asset group '{groups[0].get('Name')}' ({groups[0]['Id']})")
+                return groups[0]["Id"]
+            return None
+        for g in groups:
+            if g.get("Id") == id_or_name:
+                return g["Id"]
+        for g in groups:
+            if str(g.get("Name", "")).lower() == id_or_name.lower():
+                log(f"Asset group '{g['Name']}' -> {g['Id']}")
+                return g["Id"]
+        die(f"Asset group '{id_or_name}' not found. Available: " + ", ".join(f"{g.get('Name')} ({g.get('Id')})" for g in groups))
 
     def find_app(self, name: str) -> dict | None:
         flt = f"Name eq '{name.replace(chr(39), chr(39) * 2)}'"

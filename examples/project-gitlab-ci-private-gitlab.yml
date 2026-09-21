@@ -1,0 +1,12 @@
+# Project pipeline when the central repo is a PRIVATE project in the same GitLab instance.
+# Group-level CI/CD variables required: APPSCAN_TEMPLATES_PROJECT (e.g. security/appscan360-gitlab),
+# APPSCAN_TEMPLATES_REF (v1), APPSCAN_SCRIPTS_GIT_URL (https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/security/appscan360-gitlab.git),
+# APPSCAN_SCRIPTS_GIT_REF (v1), plus APPSCAN_SERVICE_URL / APPSCAN_KEY / APPSCAN_SECRET.
+# Central project: Settings > CI/CD > Job token permissions -> add this project's group to the allowlist.
+include:
+  - project: '$APPSCAN_TEMPLATES_PROJECT'
+    ref: '$APPSCAN_TEMPLATES_REF'
+    file: 'yaml-gitlab-private/appscan360_scan_sast.yaml'
+  - project: '$APPSCAN_TEMPLATES_PROJECT'
+    ref: '$APPSCAN_TEMPLATES_REF'
+    file: 'yaml-gitlab-private/appscan360_scan_dast.yaml'

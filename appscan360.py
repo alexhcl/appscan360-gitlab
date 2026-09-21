@@ -79,7 +79,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--app-id", default=env("APPSCAN_APP_ID", None, "appId"),
                    help="use this existing application (verified, never created) [env APPSCAN_APP_ID]")
     p.add_argument("--app-name", default=env("APPSCAN_APP_NAME", None, "appscanAppName", "asocAppName", "CI_PROJECT_NAME"))
-    p.add_argument("--asset-group-id", default=env("APPSCAN_ASSET", None, "assetGroupId"))
+    p.add_argument("--asset-group-id", default=env("APPSCAN_ASSET", None, "assetGroupId"),
+                   help="asset group Id or Name for creating the app; empty = default/only group [env APPSCAN_ASSET]")
     p.add_argument("--business-impact", default=env("APPSCAN_BUSINESS_IMPACT"), help="Low|Medium|High|Critical (on create)")
 
     # ---- sast
@@ -207,6 +208,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--name", default=env("DAST_PRESENCE_NAME"))
     p.add_argument("--presence-id", default=env("DAST_PRESENCE_ID"))
 
+    # ---- asset groups
+    p = sub.add_parser("assets", help="list asset groups (id, name)")
+    add_common(p)
+
     # ---- irx only
     p = sub.add_parser("irx", help="generate an IRX with SAClientUtil, no upload")
     add_common(p); add_scan_common(p)
@@ -232,7 +237,8 @@ def main(argv=None) -> int:
                     if not args.app_name:
                         die("--app-name / APPSCAN_APP_NAME is required (or give APPSCAN_APP_ID)")
                     extra = {"BusinessImpact": args.business_impact} if args.business_impact else {}
-                    app_id = client.get_or_create_app(args.app_name, args.asset_group_id, **extra)
+                    asset = client.resolve_asset_group(args.asset_group_id) if not client.find_app(args.app_name) else None
+                    app_id = client.get_or_create_app(args.app_name, asset, **extra)
                     state_save(app_id=app_id, app_name=args.app_name)
                 Path("appId.txt").write_text(app_id)  # compatibility with the bash edition
                 print(app_id)
@@ -284,6 +290,11 @@ def main(argv=None) -> int:
                     print(p.get("Id"))
                 else:
                     client.delete_presence(args.presence_id or die("--presence-id required"))
+                return 0
+
+            if args.cmd == "assets":
+                for g in client.asset_groups():
+                    print(f"{g.get('Id')}  {g.get('Name')}{'  (default)' if g.get('IsDefault') else ''}")
                 return 0
 
             if args.cmd == "irx":

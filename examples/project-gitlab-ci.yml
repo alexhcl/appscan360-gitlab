@@ -1,8 +1,8 @@
 # The ONLY thing a project needs (or nothing at all when using a compliance framework).
-# Keep just the scans you want. Project-specific values (DAST_URL, gates, ...) go in
-# Settings > CI/CD > Variables, not in this file.
+# Requires the group-level CI/CD variables APPSCAN_TEMPLATES_URL, APPSCAN_SCRIPTS_GIT_URL,
+# APPSCAN_SCRIPTS_GIT_REF (plus APPSCAN_SERVICE_URL / KEY / SECRET). Keep just the scans you want.
 include:
-  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_sast.yaml'
-  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_sca.yaml'
-  - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_dast.yaml'
-  # - remote: 'https://raw.githubusercontent.com/alexhcl/appscan360-gitlab/v1/yaml/appscan360_scan_dast_api.yaml'
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_sast.yaml'
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_sca.yaml'
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_dast.yaml'
+  # - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_dast_api.yaml'

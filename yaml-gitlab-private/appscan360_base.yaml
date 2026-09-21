@@ -1,17 +1,18 @@
-# HCL AppScan 360° - shared base for all scan templates (included by appscan360_scan_*.yaml).
+# HCL AppScan 360° - shared base for all scan templates (PRIVATE GITLAB variant: include: project:).
 #
 # ALL configuration lives here and in the scan templates. A project never needs to copy anything:
 #   .gitlab-ci.yml of a project:
 #     include:
-#       - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_sast.yaml'
+#       - project: '$APPSCAN_TEMPLATES_PROJECT'
+#         ref: '$APPSCAN_TEMPLATES_REF'
+#         file: 'yaml-gitlab-private/appscan360_scan_sast.yaml'
 #   or attach these templates via a compliance framework so no project file is touched at all.
 #
 # WHERE THE CENTRAL REPO LIVES is defined ONCE as group (or instance) CI/CD variables, never in files:
-#   APPSCAN_TEMPLATES_URL    raw base URL of this repo at a ref, e.g.
-#                            https://raw.githubusercontent.com/<owner>/appscan360-gitlab/v1
-#                            https://gitlab.example.com/<group>/appscan360-gitlab/-/raw/v1
-#   APPSCAN_SCRIPTS_GIT_URL  clone URL, e.g. https://github.com/<owner>/appscan360-gitlab.git
-#                            or https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/<group>/appscan360-gitlab.git
+#   APPSCAN_TEMPLATES_PROJECT  path of this project in the same GitLab instance, e.g. security/appscan360-gitlab
+#   APPSCAN_TEMPLATES_REF      v1
+#   APPSCAN_SCRIPTS_GIT_URL    https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/security/appscan360-gitlab.git
+#                              (central project: Settings > CI/CD > Job token permissions -> allow the consuming group)
 #   APPSCAN_SCRIPTS_GIT_REF  v1
 # (GitLab expands group/instance/project CI/CD variables inside include:, but not variables from a
 #  .gitlab-ci.yml `variables:` block.) Moving the repo = changing those variables.
