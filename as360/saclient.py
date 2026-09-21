@@ -6,7 +6,7 @@ Do NOT run `appscan.sh update` against 360°: the client version is tied to the
 installation (cloud builds are not interchangeable).
 
 Commands wrapped (CLI reference, Linux/macOS):
-  appscan.sh prepare      [-c cfg] [-d dir] [-n name] [-sco] [-oso] [-sao] [-es|-ds|-so] [-t] [-s speed] [-nc] [-jdk path]
+  appscan.sh / appscan.bat (Windows)  prepare      [-c cfg] [-d dir] [-n name] [-sco] [-oso] [-sao] [-es|-ds|-so] [-t] [-s speed] [-nc] [-jdk path]
   appscan.sh prepare_sca  [-d dir] [-n name] [-image img | -container ctr]
   appscan.sh prepare_sbom <sbom.spdx.json> [-d dir] [-n name]
 """
@@ -19,22 +19,26 @@ import subprocess
 import zipfile
 from pathlib import Path
 
-from .common import log, die, env
+from .common import log, die, env, IS_WINDOWS, SACLIENT_TOOL_TYPE, APPSCAN_EXE
 from .client import AS360Client
 
 
 def find_appscan_sh() -> str | None:
-    exe = shutil.which("appscan.sh")
+    """Locate appscan.sh (Linux/macOS) or appscan.bat (Windows)."""
+    exe = shutil.which(APPSCAN_EXE)
     if exe:
         return exe
-    for base in (env("APPSCAN_INSTALL_DIR"), str(Path.home() / "SAClientUtil"), "/opt/SAClientUtil"):
-        if base and Path(base, "bin", "appscan.sh").is_file():
-            return str(Path(base, "bin", "appscan.sh"))
+    candidates = [env("APPSCAN_INSTALL_DIR"), str(Path.home() / "SAClientUtil")]
+    candidates += [r"C:\SAClientUtil", r"C:\Program Files\SAClientUtil"] if IS_WINDOWS else ["/opt/SAClientUtil"]
+    for base in candidates:
+        if base and Path(base, "bin", APPSCAN_EXE).is_file():
+            return str(Path(base, "bin", APPSCAN_EXE))
     return None
 
 
-def install_saclient(client: AS360Client, install_dir: Path | None = None, tool_type: str = "Linux") -> str:
-    """Return path to appscan.sh, downloading SAClientUtil from the 360° host if needed."""
+def install_saclient(client: AS360Client, install_dir: Path | None = None, tool_type: str | None = None) -> str:
+    """Return path to appscan.sh/.bat, downloading SAClientUtil (Win | Linux | Mac, auto-detected) if needed."""
+    tool_type = tool_type or SACLIENT_TOOL_TYPE
     exe = find_appscan_sh()
     if exe:
         log(f"Using existing SAClientUtil: {exe}")
@@ -53,14 +57,15 @@ def install_saclient(client: AS360Client, install_dir: Path | None = None, tool_
     shutil.rmtree(install_dir, ignore_errors=True)
     shutil.move(str(roots[0]), str(install_dir))
     shutil.rmtree(tmp, ignore_errors=True)
-    exe = str(install_dir / "bin" / "appscan.sh")
-    # zipfile does not restore the executable bit reliably: make bin/ and jre/bin/ executable
-    for d in (install_dir / "bin", install_dir / "jre" / "bin", install_dir / "jre" / "lib"):
-        if d.is_dir():
-            for f in d.rglob("*"):
-                if f.is_file() and (f.parent.name == "bin" or f.suffix in ("", ".sh")):
-                    os.chmod(f, os.stat(f).st_mode | 0o755)
-    os.chmod(exe, 0o755)
+    exe = str(install_dir / "bin" / APPSCAN_EXE)
+    if not IS_WINDOWS:
+        # zipfile does not restore the executable bit reliably: make bin/ and jre/bin/ executable
+        for d in (install_dir / "bin", install_dir / "jre" / "bin", install_dir / "jre" / "lib"):
+            if d.is_dir():
+                for f in d.rglob("*"):
+                    if f.is_file() and (f.parent.name == "bin" or f.suffix in ("", ".sh")):
+                        os.chmod(f, os.stat(f).st_mode | 0o755)
+        os.chmod(exe, 0o755)
     os.environ["PATH"] = f"{install_dir / 'bin'}{os.pathsep}{os.environ.get('PATH', '')}"
     log(f"SAClientUtil installed at {install_dir}", "OK")
     subprocess.run([exe, "version"], check=False)
@@ -79,7 +84,7 @@ def _extract_with_permissions(zip_path: Path, dest: Path) -> None:
 
 def _run(cmd: list[str], cwd: str | None = None) -> None:
     log("Running: " + " ".join(cmd))
-    r = subprocess.run(cmd, cwd=cwd)
+    r = subprocess.run(cmd, cwd=cwd, shell=IS_WINDOWS)   # .bat needs the shell on Windows
     if r.returncode != 0:
         die(f"Command failed with exit code {r.returncode}: {cmd[0]} {cmd[1]}")
 

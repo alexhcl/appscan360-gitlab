@@ -43,7 +43,7 @@ import zipfile
 from pathlib import Path
 
 from .client import AS360Client, AS360Error
-from .common import log, die, state_save
+from .common import log, die, state_save, IS_WINDOWS, PRESENCE_PLATFORM
 from .sast import _log_counts
 
 
@@ -196,8 +196,9 @@ class EphemeralPresence:
     Presence status values (swagger): Active, NeverUsed, KeyExpired, KeyNeverUsed, Inactive, Disable.
     Deleted when the scan is finished."""
 
-    def __init__(self, client: AS360Client, name: str, work: Path, platform: str = "linux_x64"):
-        self.client, self.name, self.work, self.platform = client, name, work, platform
+    def __init__(self, client: AS360Client, name: str, work: Path, platform: str | None = None):
+        self.client, self.name, self.work = client, name, work
+        self.platform = platform or PRESENCE_PLATFORM      # win_x64 | linux_x64 | osx_x64 (auto)
         self.id: str | None = None
         self.proc: subprocess.Popen | None = None
 
@@ -215,14 +216,16 @@ class EphemeralPresence:
         shutil.rmtree(pdir, ignore_errors=True)
         with zipfile.ZipFile(zip_path) as z:
             z.extractall(pdir)
-        starter = next((p for p in pdir.rglob("startPresence.sh")), None)
+        starter_name = "startPresence.bat" if IS_WINDOWS else "startPresence.sh"
+        starter = next((p for p in pdir.rglob(starter_name)), None)
         if not starter:
-            die("startPresence.sh not found in the downloaded presence package")
-        for f in starter.parent.rglob("*"):
-            if f.is_file() and f.suffix in ("", ".sh"):
-                os.chmod(f, 0o755)
+            die(f"{starter_name} not found in the downloaded presence package")
+        if not IS_WINDOWS:
+            for f in starter.parent.rglob("*"):
+                if f.is_file() and f.suffix in ("", ".sh"):
+                    os.chmod(f, 0o755)
         log(f"Starting presence: {starter}")
-        self.proc = subprocess.Popen([str(starter)], cwd=starter.parent,
+        self.proc = subprocess.Popen([str(starter)], cwd=starter.parent, shell=IS_WINDOWS,
                                      stdout=open(self.work / "presence.log", "w"), stderr=subprocess.STDOUT)
         deadline = time.time() + wait_seconds
         while time.time() < deadline:

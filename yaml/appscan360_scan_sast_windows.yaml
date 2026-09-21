@@ -1,0 +1,33 @@
+# SAST scan. Include this one line in a project's .gitlab-ci.yml (nothing else needed):
+#   include:
+#     - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_sast_windows.yaml'
+# WINDOWS runner variant (PowerShell). Override any value below with a CI/CD variable of the same name (group or project level).
+include:
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_base_windows.yaml'   # APPSCAN_TEMPLATES_URL = group/instance CI/CD variable
+
+stages:
+  - scan-sast
+
+appscan360-sast:
+  extends: .appscan360_base
+  stage: scan-sast
+  variables:
+    SAST_UPLOAD_MODE: "zip"              # zip (upload source, 360° prepares) | irx (SAClientUtil on runner) | auto
+    SAST_ZIP_EXCLUDE: ""                 # glob list left out of the archive, e.g. "docs/*,*.log,vendor/*"
+    SAST_CONFIG_FILE: ""                 # appscan-config.xml (irx: passed with -c; zip: put it at repo root)
+    SAST_SOURCE_CODE_ONLY: "no"          # yes = -sco (skip binaries / Java bytecode)
+    SAST_LATEST_COMMIT_ONLY: "no"        # yes = only files changed in last commit (irx mode)
+    SAST_INCLUDE_SCA: "no"               # yes = SCA findings in the same IRX (irx mode)
+    SAST_SECRETS: ""                     # enable | disable | only (irx mode)
+    SAST_SCAN_SPEED: ""                  # simple | balanced | deep | thorough (irx mode)
+    SAST_THIRD_PARTY: "no"               # yes = -t include third-party code (irx mode)
+    SAST_JDK_PATH: ""                    # irx mode, Java projects
+    APPSCAN_GATES: "severity"
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+  script:
+    - Invoke-Expression "$env:AS360 app"
+    - Invoke-Expression "$env:AS360 sast"
+    - Invoke-Expression "$env:AS360 report"
+    - Invoke-Expression "$env:AS360 gate $env:APPSCAN_GATES"

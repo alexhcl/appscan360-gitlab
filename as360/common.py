@@ -7,9 +7,19 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import sys
 from datetime import datetime
 from pathlib import Path
+
+# ---------------------------------------------------------------- platform detection
+IS_WINDOWS = platform.system() == "Windows"
+IS_MAC = platform.system() == "Darwin"
+SACLIENT_TOOL_TYPE = "Win" if IS_WINDOWS else ("Mac" if IS_MAC else "Linux")
+PRESENCE_PLATFORM = "win_x64" if IS_WINDOWS else ("osx_x64" if IS_MAC else "linux_x64")
+APPSCAN_EXE = "appscan.bat" if IS_WINDOWS else "appscan.sh"
+if IS_WINDOWS:
+    os.system("")  # enable ANSI colours in the Windows console
 
 # ---------------------------------------------------------------- logging
 _COLORS = {"INFO": "", "OK": "\033[32m", "WARN": "\033[33m", "ERR": "\033[31m", "GATE": "\033[35m"}

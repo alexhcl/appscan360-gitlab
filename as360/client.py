@@ -390,10 +390,11 @@ class AS360Client:
         self.delete(f"Presences/{presence_id}")
 
     # ------------------------------------------------------------ tools
-    def download_saclient(self, dest: Path, tool_type: str = "Linux") -> Path:
+    def download_saclient(self, dest: Path, tool_type: str | None = None) -> Path:
         """GET /api/v4/Tools/SAClientUtilByType?toolType=Win|Linux|Mac(|*Gui).
         SAClientUtil MUST come from the 360° instance (cloud build is not compatible)."""
-        return self.download("Tools/SAClientUtilByType", dest, toolType=tool_type.capitalize())
+        from .common import SACLIENT_TOOL_TYPE
+        return self.download("Tools/SAClientUtilByType", dest, toolType=(tool_type or SACLIENT_TOOL_TYPE).capitalize())
 
     def saclient_version(self, tool_type: str = "Linux") -> str | None:
         try:

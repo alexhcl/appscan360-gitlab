@@ -1,0 +1,84 @@
+# ============================================================================================
+# OPTION B - central repo is a PRIVATE project on a DIFFERENT (remote) GitLab instance.
+# Central project: Settings > Access tokens -> role Reporter, scopes read_api + read_repository.
+# Group-level CI/CD variables (mask the token):
+#   APPSCAN_TEMPLATES_URL   = https://gitlab.remote.com/security/appscan360-gitlab/-/raw/v1
+#   APPSCAN_TEMPLATES_TOKEN = glpat-xxxxxxxx
+#   APPSCAN_SCRIPTS_GIT_URL = https://oauth2:glpat-xxxxxxxx@gitlab.remote.com/security/appscan360-gitlab.git
+#   APPSCAN_SCRIPTS_GIT_REF = v1
+# Project .gitlab-ci.yml:
+#   include:
+#     - remote: '$APPSCAN_TEMPLATES_URL/yaml-gitlab-remote-private/appscan360_scan_sast_windows.yaml?private_token=$APPSCAN_TEMPLATES_TOKEN'
+# ============================================================================================
+# DAST scan - web application or AppScan Standard .scan/.scant file. Include this one line in a project's .gitlab-ci.yml (nothing else needed):
+#   include:
+#     - remote: '$APPSCAN_TEMPLATES_URL/yaml-gitlab-remote-private/appscan360_scan_dast_windows.yaml?private_token=$APPSCAN_TEMPLATES_TOKEN'
+# WINDOWS runner variant (PowerShell). Override any value below with a CI/CD variable of the same name (group or project level).
+include:
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml-gitlab-remote-private/appscan360_base_windows.yaml?private_token=$APPSCAN_TEMPLATES_TOKEN'   # <<< B token added
+
+stages:
+  - scan-dast
+
+appscan360-dast:
+  extends: .appscan360_base
+  stage: scan-dast
+  needs: []
+  variables:
+    DAST_MODE: "web"                     # web | api | file
+    DAST_URL: "https://demo.testfire.net"
+    DAST_ADDITIONAL_DOMAINS: ""          # comma list
+    DAST_EXCLUDE_PATHS: ""               # "/logout,re:.*\\.pdf"   (prefix re: = regex)
+    DAST_INCLUDE_PATHS: ""               # exceptions to the excluded paths
+    DAST_SCAN_BELOW_DIRECTORY: "no"
+    DAST_CASE_SENSITIVE_PATHS: "no"
+    # -- login: none | userpass | recorded
+    DAST_LOGIN_METHOD: "none"
+    DAST_LOGIN_USER: ""
+    DAST_LOGIN_PASSWORD: "$DAST_LOGIN_PASSWORD"       # masked CI/CD variable
+    DAST_LOGIN_EXTRA: ""                 # third credential field
+    DAST_LOGIN_FILE: "login.dast.config" # recorded login (.config Activity Recorder / .login AppScan Standard), path in repo
+    DAST_HTTP_AUTH_USER: ""              # Basic/NTLM
+    DAST_HTTP_AUTH_PASSWORD: ""
+    DAST_HTTP_AUTH_DOMAIN: ""
+    DAST_OTP_SECRET: ""                  # TOTP secret for MFA logins
+    DAST_OTP_LENGTH: "6"
+    DAST_OTP_HASH: "Sha1"                # None | Sha1 | Sha256 | Sha512
+    DAST_OTP_TIMESTEP: "30"
+    # -- explore data (recorded traffic); missing files are ignored
+    DAST_EXPLORE_FILES: ""               # "manualexplore.dast.config,traffic2.dast.config"
+    DAST_MULTISTEP_FILES: ""             # multi-step operation recordings
+    DAST_TEST_ONLY: "no"                 # yes = test recorded traffic only (see README §4)
+    # -- tests
+    DAST_TEST_POLICY_ID: ""              # CustomTestPolicyId; empty = Default policy
+    DAST_OPTIMIZATION: "Fast"            # NoOptimization | Fast | Faster | Fastest
+    DAST_TEST_LOGIN_PAGES: "no"
+    DAST_TEST_LOGIN_PAGES_NO_SESSION: "no"
+    DAST_TEST_LOGOUT_PAGES: "no"
+    DAST_REPORT_VULNERABLE_COMPONENTS: "yes"
+    DAST_NO_FORM_FILL: "no"
+    DAST_THREADS: "10"
+    DAST_CONNECTION_TIMEOUT: ""          # seconds; empty = automatic
+    DAST_MAX_REQUESTS: "10"
+    DAST_MAX_REQUESTS_TIMEFRAME: "1000"
+    DAST_SCAN_PRIORITY: "Regular"        # Regular | High
+    DAST_SCAN_TEMPLATE_ID: ""            # saved scan template id
+    # -- private targets
+    DAST_PRESENCE_ID: ""                 # existing AppScan Presence
+    DAST_EPHEMERAL_PRESENCE: "no"        # yes = start a temporary Presence on this runner
+    DAST_PRESENCE_NAME: ""
+    # -- AppScan Standard file (DAST_MODE=file)
+    DAST_SCAN_FILE: ""                   # file.scan | file.scant (path in repo)
+    DAST_TEST_OPERATION: "None"          # None | Retest | ContinueTest | ReportOnly
+    # -- extra request fields (deep-merged JSON file or string)
+    DAST_PAYLOAD_JSON: ""
+    APPSCAN_MAX_ISSUES_ALLOWED: "100"
+    APPSCAN_GATES: "severity"
+  artifacts:
+    reports:
+      dast: gl-dast-report.json
+  script:
+    - Invoke-Expression "$env:AS360 app"
+    - Invoke-Expression "$env:AS360 dast"
+    - Invoke-Expression "$env:AS360 report"
+    - Invoke-Expression "$env:AS360 gate $env:APPSCAN_GATES"

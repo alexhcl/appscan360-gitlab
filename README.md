@@ -95,9 +95,13 @@ Anything not exposed by the CLI (Recurrence, `ScanConfiguration.Llm`, …) can b
 
 `DAST_EPHEMERAL_PRESENCE=yes` creates a Presence named after the job, downloads the `linux_x64` package from 360°, runs `startPresence.sh` on the runner, waits for it to become active, runs the scan with `PresenceId`, and deletes the Presence at the end (also on failure). Use it to scan an app started as a GitLab `services:` container. The runner needs outbound access to the 360° host.
 
-## 6. Not covered / notes
+## 6. Windows runners
+
+The Python code detects the OS automatically (SAClientUtil `Win`/`Linux`/`Mac` download, `appscan.bat` vs `appscan.sh`, Presence `win_x64`/`linux_x64`). Only the job's `before_script` is shell-specific, so each template folder has a `*_windows.yaml` twin with a PowerShell `before_script`: on a Windows runner (shell executor, PowerShell, Python 3 and Git on PATH) include `appscan360_scan_sast_windows.yaml` instead of `appscan360_scan_sast.yaml`. Same variables, same behaviour. A project can carry both jobs with `rules:` on a variable if it has mixed runners. Note: .NET (non-Core) SAST needs the Windows SAClientUtil, which this makes possible.
+
+## 7. Not covered / notes
 
 * IAST (agent-based) is not part of this integration.
-* .NET (non-Core) IRX generation needs a Windows runner (`SAClientUtil` `win`).
+* .NET (non-Core) IRX generation needs a Windows runner (use the `*_windows.yaml` templates).
 * `SCA_SOURCE=image|container` needs a docker CLI and socket in the job (use the Dockerfile image with `/var/run/docker.sock` mounted or a DinD service).
 * The example script you had (`as360_scan.py`) embeds a live key id/secret – rotate that key and use masked CI/CD variables.

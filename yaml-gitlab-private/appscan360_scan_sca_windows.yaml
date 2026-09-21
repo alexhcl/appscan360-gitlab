@@ -1,0 +1,46 @@
+# ============================================================================================
+# OPTION A - central repo is a PRIVATE project in the SAME GitLab instance as the scanned projects.
+# Group-level CI/CD variables:
+#   APPSCAN_TEMPLATES_PROJECT = security/appscan360-gitlab
+#   APPSCAN_TEMPLATES_REF     = v1
+#   APPSCAN_SCRIPTS_GIT_URL   = https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.example.com/security/appscan360-gitlab.git
+#   APPSCAN_SCRIPTS_GIT_REF   = v1
+# Central project: Settings > CI/CD > Job token permissions -> allow the consuming group.
+# ============================================================================================
+# SCA scan (open-source composition). Include this one line in a project's .gitlab-ci.yml (nothing else needed):
+#   include:
+#     - project: '$APPSCAN_TEMPLATES_PROJECT'
+#       ref: '$APPSCAN_TEMPLATES_REF'
+#       file: 'yaml-gitlab-private/appscan360_scan_sca_windows.yaml'
+# WINDOWS runner variant (PowerShell). Override any value below with a CI/CD variable of the same name (group or project level).
+include:
+  - project: '$APPSCAN_TEMPLATES_PROJECT'   # group/instance CI/CD variables, e.g. security/appscan360-gitlab
+    ref: '$APPSCAN_TEMPLATES_REF'           # e.g. v1
+    file: 'yaml-gitlab-private/appscan360_base_windows.yaml'
+
+stages:
+  - scan-sca
+
+appscan360-sca:
+  extends: .appscan360_base
+  stage: scan-sca
+  needs: []
+  # image: appscan360-runner             # image built from the Dockerfile (SAClientUtil + docker CLI) - required for image/container
+  variables:
+    SCA_SOURCE: "source"                 # source | image | container | sbom
+    SCA_IMAGE: ""                        # docker image name/digest/archive  (SCA_SOURCE=image)
+    SCA_CONTAINER: ""                    # running container id           (SCA_SOURCE=container)
+    SCA_SBOM_FILE: ""                    # SPDX 2.3 json                    (SCA_SOURCE=sbom)
+    SCA_CONSIDER_PKG_MANAGER: "yes"      # no = -nc ignore package-manager files
+    SCA_FAIL_LICENSE_RISK: "High"        # license gate: comma list of risk levels that fail (High,Medium)
+    APPSCAN_REPORT_FORMATS: "html,xml,gitlab,license,sbom"
+    APPSCAN_SBOM_FORMAT: "SPDX_Json"     # SPDX_Json | SPDX_Text | CycloneDX_Json | CycloneDX_XML
+    APPSCAN_GATES: "severity,license"
+  artifacts:
+    reports:
+      dependency_scanning: gl-dependency-scanning-report.json
+  script:
+    - Invoke-Expression "$env:AS360 app"
+    - Invoke-Expression "$env:AS360 sca"
+    - Invoke-Expression "$env:AS360 report"
+    - Invoke-Expression "$env:AS360 gate $env:APPSCAN_GATES"
