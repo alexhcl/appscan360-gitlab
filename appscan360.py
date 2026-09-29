@@ -148,7 +148,7 @@ def build_parser() -> argparse.ArgumentParser:
     _bool_flag(p, "test-login-pages-no-session", "DAST_TEST_LOGIN_PAGES_NO_SESSION", False, "")
     _bool_flag(p, "test-logout-pages", "DAST_TEST_LOGOUT_PAGES", False, "")
     _bool_flag(p, "report-vulnerable-components", "DAST_REPORT_VULNERABLE_COMPONENTS", True, "")
-    _bool_flag(p, "no-form-fill", "DAST_NO_FORM_FILL", False, "disable automatic form fill")
+    p.add_argument("--disable-form-fill", dest="no_form_fill", action=argparse.BooleanOptionalAction, default=env_bool("DAST_NO_FORM_FILL", False), help="disable automatic form fill [env DAST_NO_FORM_FILL, default False]")
     p.add_argument("--threads", default=env("DAST_THREADS", "10"))
     p.add_argument("--connection-timeout", default=env("DAST_CONNECTION_TIMEOUT"), help="seconds; unset = automatic")
     p.add_argument("--max-requests", default=env("DAST_MAX_REQUESTS", "10"))

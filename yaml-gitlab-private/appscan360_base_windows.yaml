@@ -33,7 +33,8 @@
 #   GITHUB_TOKEN (private central repo), DAST_LOGIN_PASSWORD / DAST_API_KEYS / DAST_OTP_SECRET when needed.
 #
 # Where the integration scripts come from (APPSCAN_SCRIPTS_SOURCE):
-#   git     (default) cloned at job start from $APPSCAN_SCRIPTS_GIT_URL (ref $APPSCAN_SCRIPTS_GIT_REF)
+#   auto    (default) pre-installed copy in C:\appscan360, C:\GitLab-Runner\appscan360, %ProgramData%\appscan360 if present, else git
+#   git     cloned at job start from $APPSCAN_SCRIPTS_GIT_URL (ref $APPSCAN_SCRIPTS_GIT_REF)
 #   repo    committed in the scanned project under $APPSCAN_SCRIPTS_DIR
 #   runner  pre-installed on the runner host / in the job image at $APPSCAN_SCRIPTS_DIR (see Dockerfile)
 
@@ -43,7 +44,7 @@ variables:
   APPSCAN_RUNNER_TAG: ""                              # e.g. "appscan"
 
   # ---- where the integration scripts come from
-  APPSCAN_SCRIPTS_SOURCE: "git"                       # git | repo | runner
+  APPSCAN_SCRIPTS_SOURCE: "auto"                      # auto | git | repo | runner  (auto = pre-installed copy if present, else git)
   APPSCAN_SCRIPTS_GIT_URL: $APPSCAN_SCRIPTS_GIT_URL  # set at group level (see header); private GitHub: https://${GITHUB_TOKEN}@github.com/...
   APPSCAN_SCRIPTS_GIT_REF: $APPSCAN_SCRIPTS_GIT_REF  # set at group level, e.g. v1
   # APPSCAN_SCRIPTS_DIR: "appscan360"                 # only for repo/runner
@@ -93,6 +94,13 @@ variables:
   before_script:
     - |
       $ErrorActionPreference = "Stop"
+      # auto: use a pre-installed copy if one exists in a well-known folder, otherwise clone
+      if (-not $env:APPSCAN_SCRIPTS_SOURCE -or $env:APPSCAN_SCRIPTS_SOURCE -eq "auto") {
+        $env:APPSCAN_SCRIPTS_SOURCE = "git"
+        foreach ($d in @($env:APPSCAN_SCRIPTS_DIR, "C:\appscan360", "C:\GitLab-Runner\appscan360", "$env:ProgramData\appscan360", "$env:USERPROFILE\appscan360")) {
+          if ($d -and (Test-Path "$d\appscan360.py")) { $env:APPSCAN_SCRIPTS_DIR = $d; $env:APPSCAN_SCRIPTS_SOURCE = "runner"; break }
+        }
+      }
       switch ($env:APPSCAN_SCRIPTS_SOURCE) {
         "git" {
           Write-Host "Fetching AppScan 360° scripts from $env:APPSCAN_SCRIPTS_GIT_URL@$env:APPSCAN_SCRIPTS_GIT_REF"

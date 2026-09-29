@@ -23,7 +23,8 @@
 #   GITHUB_TOKEN (private central repo), DAST_LOGIN_PASSWORD / DAST_API_KEYS / DAST_OTP_SECRET when needed.
 #
 # Where the integration scripts come from (APPSCAN_SCRIPTS_SOURCE):
-#   git     (default) cloned at job start from $APPSCAN_SCRIPTS_GIT_URL (ref $APPSCAN_SCRIPTS_GIT_REF)
+#   auto    (default) pre-installed copy in /opt/appscan360, ~/appscan360, C:\appscan360, C:\GitLab-Runner\appscan360 if present, else git
+#   git     cloned at job start from $APPSCAN_SCRIPTS_GIT_URL (ref $APPSCAN_SCRIPTS_GIT_REF)
 #   repo    committed in the scanned project under $APPSCAN_SCRIPTS_DIR
 #   runner  pre-installed on the runner host / in the job image at $APPSCAN_SCRIPTS_DIR (see Dockerfile)
 
@@ -33,7 +34,7 @@ variables:
   APPSCAN_RUNNER_TAG: ""                              # e.g. "appscan"
 
   # ---- where the integration scripts come from
-  APPSCAN_SCRIPTS_SOURCE: "git"                       # git | repo | runner
+  APPSCAN_SCRIPTS_SOURCE: "auto"                      # auto | git | repo | runner  (auto = pre-installed copy if present, else git)
   APPSCAN_SCRIPTS_GIT_URL: $APPSCAN_SCRIPTS_GIT_URL  # set at group level (see header); private GitHub: https://${GITHUB_TOKEN}@github.com/...
   APPSCAN_SCRIPTS_GIT_REF: $APPSCAN_SCRIPTS_GIT_REF  # set at group level, e.g. v1
   # APPSCAN_SCRIPTS_DIR: "appscan360"                 # only for repo/runner
@@ -90,6 +91,13 @@ variables:
         elif command -v apk >/dev/null; then apk add --no-cache git unzip curl >/dev/null
         elif command -v yum >/dev/null; then yum install -y -q git unzip curl >/dev/null
         fi
+      fi
+      # auto: use a pre-installed copy if one exists in a well-known folder, otherwise clone
+      if [ "${APPSCAN_SCRIPTS_SOURCE:-auto}" = "auto" ]; then
+        APPSCAN_SCRIPTS_SOURCE=git
+        for d in "$APPSCAN_SCRIPTS_DIR" /opt/appscan360 "$HOME/appscan360" /c/appscan360 /c/GitLab-Runner/appscan360; do
+          if [ -n "$d" ] && [ -f "$d/appscan360.py" ]; then export APPSCAN_SCRIPTS_DIR="$d"; APPSCAN_SCRIPTS_SOURCE=runner; break; fi
+        done
       fi
       case "$APPSCAN_SCRIPTS_SOURCE" in
         git)
