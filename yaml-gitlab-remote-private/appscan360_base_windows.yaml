@@ -109,8 +109,14 @@ variables:
       if (-not (Test-Path "$env:APPSCAN_SCRIPTS_DIR\appscan360.py")) { throw "appscan360.py not found in $env:APPSCAN_SCRIPTS_DIR" }
       $py = (Get-Command python -ErrorAction SilentlyContinue).Source
       if (-not $py) { $py = (Get-Command py -ErrorAction Stop).Source }
-      & $py -c "import requests" 2>$null
-      if ($LASTEXITCODE -ne 0) { & $py -m pip install -q -r "$env:APPSCAN_SCRIPTS_DIR\requirements.txt" }
+      # Windows PowerShell 5.1 turns redirected native stderr into a terminating error under "Stop": relax it for native calls
+      $eap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+      & $py -c "import requests" *> $null
+      $haveRequests = ($LASTEXITCODE -eq 0)
+      if (-not $haveRequests) { & $py -m pip install -q -r "$env:APPSCAN_SCRIPTS_DIR\requirements.txt" }
+      $pipExit = $LASTEXITCODE
+      $ErrorActionPreference = $eap
+      if (-not $haveRequests -and $pipExit -ne 0) { throw "pip install of requirements.txt failed (exit $pipExit). Install 'requests' on the runner." }
       $env:AS360 = "& `"$py`" `"$env:APPSCAN_SCRIPTS_DIR\appscan360.py`""
       Write-Host "AppScan 360° host: $env:APPSCAN_SERVICE_URL  app: $env:APPSCAN_APP_NAME  scan: $env:APPSCAN_SCAN_NAME  gates: $env:APPSCAN_GATES"
   artifacts:
