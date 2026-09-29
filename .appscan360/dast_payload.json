@@ -1,0 +1,39 @@
+{
+  "AppId": "a5b7c8c9-b830-4ca3-858b-847a1c26689f",
+  "ScanName": "DAST local-20260929-132125 https://demo.testfire.net",
+  "Description": "GitLab pipeline",
+  "Execute": true,
+  "Personal": false,
+  "Locale": "en-US",
+  "EnableMailNotification": false,
+  "IncludeVerifiedDomains": true,
+  "OnlyFullResults": true,
+  "EnableSupportMode": false,
+  "ScanPriority": "Regular",
+  "Comment": "Scan triggered by GitLab CI/CD",
+  "ScanConfiguration": {
+    "Target": {
+      "StartingUrl": "https://demo.testfire.net",
+      "ShouldScanBelowThisDirectory": false,
+      "UseCaseSensitivePaths": false,
+      "AdditionalDomains": []
+    },
+    "Tests": {
+      "TestOptimizationLevel": "Fast",
+      "TestLoginPages": false,
+      "TestLoginPagesWithoutSessionIds": false,
+      "TestLogoutPages": false,
+      "DetectVulnerableComponents": true
+    },
+    "Communication": {
+      "ThreadNum": 10,
+      "UseAutomaticTimeout": true,
+      "MaxRequestsIn": 10,
+      "MaxRequestsTimeFrame": 1000
+    },
+    "ApplicationElements": {
+      "EnableAutomaticFormFill": true
+    }
+  },
+  "LoginConfigurationType": "None"
+}
