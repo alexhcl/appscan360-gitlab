@@ -49,6 +49,9 @@ variables:
   APPSCAN_SCRIPTS_SOURCE: "auto"                      # auto | git | repo | runner  (auto = pre-installed copy if present, else git)
   APPSCAN_SCRIPTS_GIT_URL: $APPSCAN_SCRIPTS_GIT_URL  # set at group level (see header); private GitHub: https://${GITHUB_TOKEN}@github.com/...
   APPSCAN_SCRIPTS_GIT_REF: $APPSCAN_SCRIPTS_GIT_REF  # set at group level, e.g. v1
+  # ---- folder layout relative to the runner builds directory (requires [runners.custom_build_dir] enabled = true)
+  GIT_CLONE_PATH: $CI_BUILDS_DIR/repo_source_code/$CI_PROJECT_NAME   # project checkout (set "" to use GitLab's default path)
+  APPSCAN_SCRIPTS_CLONE_DIR: $CI_BUILDS_DIR/as360_worker_scripts     # integration scripts, re-cloned every job (set "" for a temp folder)
   # APPSCAN_SCRIPTS_DIR: "appscan360"                 # only for repo/runner
 
   # ---- AppScan 360° connection (URL/key/secret come from CI/CD variables)
@@ -115,7 +118,7 @@ variables:
         git)
           echo "Fetching AppScan 360° scripts from $APPSCAN_SCRIPTS_GIT_URL@$APPSCAN_SCRIPTS_GIT_REF"
           # clone OUTSIDE the project directory so the scripts are never part of the scanned source
-          SCRIPTS_CLONE="${TMPDIR:-/tmp}/appscan360-scripts-${CI_JOB_ID:-local}"
+          SCRIPTS_CLONE="${APPSCAN_SCRIPTS_CLONE_DIR:-${TMPDIR:-/tmp}/appscan360-scripts-${CI_JOB_ID:-local}}"
           rm -rf "$SCRIPTS_CLONE"
           git clone --depth 1 --branch "$APPSCAN_SCRIPTS_GIT_REF" "$APPSCAN_SCRIPTS_GIT_URL" "$SCRIPTS_CLONE"
           export APPSCAN_SCRIPTS_DIR="$SCRIPTS_CLONE" ;;

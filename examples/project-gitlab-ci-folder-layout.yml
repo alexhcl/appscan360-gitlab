@@ -1,0 +1,14 @@
+# Fixed folder layout relative to the runner's builds directory:
+#   <builds>/repo_source_code/<project>   project checkout
+#   <builds>/as360_worker_scripts         integration scripts (re-cloned every job)
+# Runner config.toml must allow custom build directories:
+#   [[runners]]
+#     builds_dir = "C:/GitLab-Runner/builds"        # or /home/gitlab-runner/builds
+#     [runners.custom_build_dir]
+#       enabled = true
+include:
+  - remote: '$APPSCAN_TEMPLATES_URL/yaml/appscan360_scan_sast_windows.yaml'   # or the Linux / private-repo variant
+
+variables:
+  GIT_CLONE_PATH: $CI_BUILDS_DIR/repo_source_code/$CI_PROJECT_NAME
+  APPSCAN_SCRIPTS_CLONE_DIR: $CI_BUILDS_DIR/as360_worker_scripts
