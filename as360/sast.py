@@ -27,7 +27,8 @@ from .client import AS360Client, AS360Error
 from .common import log, die, state_save
 from . import saclient
 
-DEFAULT_ZIP_EXCLUDES = [".git", ".git/*", "*/.git/*", "node_modules", "*/node_modules/*",
+DEFAULT_ZIP_EXCLUDES = [".git", ".git/*", "*/.git/*", ".gitlab-ci.yml", ".gitlab", ".gitlab/*",
+                        "node_modules", "*/node_modules/*",
                         ".appscan360*", ".appscan360*/*", "*/.appscan360*/*", "*.irx", "*_report.*", "gl-*-report.json",
                         "appId.txt", "scanId.txt", "scanTech.txt"]
 

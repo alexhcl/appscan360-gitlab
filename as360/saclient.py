@@ -111,7 +111,8 @@ def write_config_for_files(target_dir: Path, files: list[str], out: Path,
 
 def write_exclusion_config(target_dir: Path, out: Path, extra_excludes: list[str] | None = None) -> Path:
     """appscan-config.xml that keeps the integration's own folders out of the IRX (used when no config is given)."""
-    patterns = ["**/.git/**", "**/.appscan360*/**", "**/*.irx", "**/gl-*-report.json"] + (extra_excludes or [])
+    patterns = ["**/.git/**", "**/.gitlab/**", "**/.gitlab-ci.yml", "**/.appscan360*/**", "**/*.irx",
+                "**/gl-*-report.json"] + (extra_excludes or [])
     exc = "".join(f"<Exclude>{p}</Exclude>" for p in patterns)
     xml = ('<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
            f'<Configuration><Targets><Target path="{target_dir.resolve()}">{exc}</Target></Targets></Configuration>')
