@@ -114,9 +114,11 @@ variables:
       case "$APPSCAN_SCRIPTS_SOURCE" in
         git)
           echo "Fetching AppScan 360° scripts from $APPSCAN_SCRIPTS_GIT_URL@$APPSCAN_SCRIPTS_GIT_REF"
-          rm -rf .appscan360-scripts
-          git clone --depth 1 --branch "$APPSCAN_SCRIPTS_GIT_REF" "$APPSCAN_SCRIPTS_GIT_URL" .appscan360-scripts
-          export APPSCAN_SCRIPTS_DIR="$CI_PROJECT_DIR/.appscan360-scripts" ;;
+          # clone OUTSIDE the project directory so the scripts are never part of the scanned source
+          SCRIPTS_CLONE="${TMPDIR:-/tmp}/appscan360-scripts-${CI_JOB_ID:-local}"
+          rm -rf "$SCRIPTS_CLONE"
+          git clone --depth 1 --branch "$APPSCAN_SCRIPTS_GIT_REF" "$APPSCAN_SCRIPTS_GIT_URL" "$SCRIPTS_CLONE"
+          export APPSCAN_SCRIPTS_DIR="$SCRIPTS_CLONE" ;;
         runner)
           echo "Using scripts pre-installed on the runner at $APPSCAN_SCRIPTS_DIR" ;;
         repo|*)
@@ -125,6 +127,7 @@ variables:
       test -f "$APPSCAN_SCRIPTS_DIR/appscan360.py" || { echo "appscan360.py not found in $APPSCAN_SCRIPTS_DIR"; exit 1; }
       python3 -c "import requests" 2>/dev/null || pip install -q -r "$APPSCAN_SCRIPTS_DIR/requirements.txt"
       export AS360="python3 $APPSCAN_SCRIPTS_DIR/appscan360.py"
+      export APPSCAN_WORK_DIR="${TMPDIR:-/tmp}/appscan360-work-${CI_JOB_ID:-local}"   # IRX/zip scratch outside the source tree
       echo "AppScan 360° host: $APPSCAN_SERVICE_URL  app: $APPSCAN_APP_NAME  scan: $APPSCAN_SCAN_NAME  gates: $APPSCAN_GATES ($APPSCAN_SEV_SEC_GW <= $APPSCAN_MAX_ISSUES_ALLOWED)"
   artifacts:
     when: always

@@ -106,10 +106,12 @@ variables:
       switch ($env:APPSCAN_SCRIPTS_SOURCE) {
         "git" {
           Write-Host "Fetching AppScan 360° scripts from $env:APPSCAN_SCRIPTS_GIT_URL@$env:APPSCAN_SCRIPTS_GIT_REF"
-          Remove-Item -Recurse -Force .appscan360-scripts -ErrorAction SilentlyContinue
-          git clone --depth 1 --branch $env:APPSCAN_SCRIPTS_GIT_REF $env:APPSCAN_SCRIPTS_GIT_URL .appscan360-scripts
+          # clone OUTSIDE the project directory so the scripts are never part of the scanned source
+          $clone = Join-Path $env:TEMP "appscan360-scripts-$env:CI_JOB_ID"
+          Remove-Item -Recurse -Force $clone -ErrorAction SilentlyContinue
+          git clone --depth 1 --branch $env:APPSCAN_SCRIPTS_GIT_REF $env:APPSCAN_SCRIPTS_GIT_URL $clone
           if ($LASTEXITCODE -ne 0) { throw "git clone failed" }
-          $env:APPSCAN_SCRIPTS_DIR = "$env:CI_PROJECT_DIR\.appscan360-scripts"
+          $env:APPSCAN_SCRIPTS_DIR = $clone
         }
         "runner" { Write-Host "Using scripts pre-installed on the runner at $env:APPSCAN_SCRIPTS_DIR" }
         default  { if (-not [System.IO.Path]::IsPathRooted($env:APPSCAN_SCRIPTS_DIR)) { $env:APPSCAN_SCRIPTS_DIR = "$env:CI_PROJECT_DIR\$env:APPSCAN_SCRIPTS_DIR" } }
@@ -126,6 +128,7 @@ variables:
       $ErrorActionPreference = $eap
       if (-not $haveRequests -and $pipExit -ne 0) { throw "pip install of requirements.txt failed (exit $pipExit). Install 'requests' on the runner." }
       $env:AS360 = "& `"$py`" `"$env:APPSCAN_SCRIPTS_DIR\appscan360.py`""
+      $env:APPSCAN_WORK_DIR = Join-Path $env:TEMP "appscan360-work-$env:CI_JOB_ID"   # IRX/zip scratch outside the source tree
       Write-Host "AppScan 360° host: $env:APPSCAN_SERVICE_URL  app: $env:APPSCAN_APP_NAME  scan: $env:APPSCAN_SCAN_NAME  gates: $env:APPSCAN_GATES"
   artifacts:
     when: always

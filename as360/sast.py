@@ -27,8 +27,9 @@ from .client import AS360Client, AS360Error
 from .common import log, die, state_save
 from . import saclient
 
-DEFAULT_ZIP_EXCLUDES = [".git", ".git/*", "*/.git/*", "node_modules", "*/node_modules/*", ".appscan360",
-                        "*/.appscan360/*", "*.irx", ".appscan360-state.json", "*_report.*", "gl-*-report.json"]
+DEFAULT_ZIP_EXCLUDES = [".git", ".git/*", "*/.git/*", "node_modules", "*/node_modules/*",
+                        ".appscan360*", ".appscan360*/*", "*/.appscan360*/*", "*.irx", "*_report.*", "gl-*-report.json",
+                        "appId.txt", "scanId.txt", "scanTech.txt"]
 
 
 def zip_source(source_dir: Path, out_zip: Path, excludes: list[str] | None = None) -> Path:
@@ -93,6 +94,9 @@ def run_sast(client: AS360Client, args) -> str:
                                                       enable_secrets=args.secrets != "disable")
             else:
                 log("No changed files detected; scanning everything", "WARN")
+        if cfg is None:
+            cfg = saclient.write_exclusion_config(source, work / "appscan-config.xml",
+                                                  [e for e in (args.zip_exclude or "").split(",") if e])
         irx = saclient.prepare_irx(
             appscan_sh, source, name=_safe(scan_name), out_dir=work, accept_ssl=accept_ssl,
             source_code_only=args.source_code_only, open_source_only=False,
