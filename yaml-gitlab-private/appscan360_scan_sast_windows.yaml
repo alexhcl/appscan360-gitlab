@@ -38,7 +38,7 @@ appscan360-sast:
     APPSCAN_GATES: "severity"
   artifacts:
     reports:
-      sast: gl-sast-report.json
+      sast: as360_output/gl-sast-report.json
   script:
     - Invoke-Expression "$env:AS360 app"
     - Invoke-Expression "$env:AS360 sast"

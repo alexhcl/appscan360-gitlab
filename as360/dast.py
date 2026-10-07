@@ -328,8 +328,9 @@ def run_dast(client: AS360Client, args) -> str:
             _deep_merge(payload, extra)
             log("Applied payload overrides from --payload-json")
 
-        (work / "dast_payload.json").write_text(json.dumps(_redact(payload), indent=2))
-        log(f"DAST payload written to {work / 'dast_payload.json'} (secrets redacted)")
+        out_dir = Path(os.environ.get("APPSCAN_REPORT_DIR", "as360_output")); out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "dast_payload.json").write_text(json.dumps(_redact(payload), indent=2))
+        log(f"DAST payload written to {out_dir / 'dast_payload.json'} (secrets redacted)")
 
         if args.rescan_id:
             r = client.rescan(args.rescan_id, comment=args.comment or "", retest_only=bool(args.test_only))

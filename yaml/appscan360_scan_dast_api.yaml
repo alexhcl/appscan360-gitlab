@@ -40,7 +40,7 @@ appscan360-dast-api:
     DAST_PAYLOAD_JSON: ""
   artifacts:
     reports:
-      dast: gl-dast-report.json
+      dast: as360_output/gl-dast-report.json
   script:
     - $AS360 app
     - $AS360 dast

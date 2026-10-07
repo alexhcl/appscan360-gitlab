@@ -73,7 +73,8 @@ def normalize_host(url: str) -> str:
 # ---------------------------------------------------------------- job state
 # Small JSON file shared between pipeline steps (scan -> report -> gate) so
 # each subcommand can run as a separate `script:` line, like the bash edition.
-STATE_FILE = Path(env("APPSCAN_STATE_FILE", ".appscan360-state.json"))
+STATE_FILE = Path(env("APPSCAN_STATE_FILE", ".appscan360-state.json"))   # templates point this outside the source tree
+STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
 def state_load() -> dict:

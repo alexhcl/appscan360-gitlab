@@ -77,7 +77,7 @@ appscan360-dast:
     APPSCAN_GATES: "severity"
   artifacts:
     reports:
-      dast: gl-dast-report.json
+      dast: as360_output/gl-dast-report.json
   script:
     - Invoke-Expression "$env:AS360 app"
     - Invoke-Expression "$env:AS360 dast"

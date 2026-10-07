@@ -29,7 +29,7 @@ from . import saclient
 
 DEFAULT_ZIP_EXCLUDES = [".git", ".git/*", "*/.git/*", ".gitlab-ci.yml", ".gitlab", ".gitlab/*",
                         "node_modules", "*/node_modules/*",
-                        ".appscan360*", ".appscan360*/*", "*/.appscan360*/*", "*.irx", "*_report.*", "gl-*-report.json",
+                        ".appscan360*", ".appscan360*/*", "*/.appscan360*/*", "as360_output", "as360_output/*", "*.irx", "*_report.*", "gl-*-report.json",
                         "appId.txt", "scanId.txt", "scanTech.txt"]
 
 

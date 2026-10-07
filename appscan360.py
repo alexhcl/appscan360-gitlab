@@ -32,7 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from as360.common import env, env_bool, env_int, log, die, state_save, state_get, scan_name_default  # noqa: E402
+from as360.common import env, env_bool, env_int, log, die, state_save, state_get, scan_name_default, STATE_FILE  # noqa: E402
 from as360.client import client_from_env, AS360Error  # noqa: E402
 
 
@@ -182,7 +182,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--formats", default=env("APPSCAN_REPORT_FORMATS", "html,xml"), help="html,pdf,xml,csv,sarif (report job), json (issues), gitlab, license (SCA), sbom (SCA)")
     p.add_argument("--sbom-format", choices=["SPDX_Json", "SPDX_Text", "CycloneDX_Json", "CycloneDX_XML"], default=env("APPSCAN_SBOM_FORMAT", "SPDX_Json"))
     p.add_argument("--apply-policies", default=env("APPSCAN_REPORT_APPLY_POLICIES", "None"), help="None|All|Select")
-    p.add_argument("--out-dir", default=env("APPSCAN_REPORT_DIR", "."))
+    p.add_argument("--out-dir", default=env("APPSCAN_REPORT_DIR", "as360_output"), help="report/artifact folder [env APPSCAN_REPORT_DIR, default as360_output]")
     p.add_argument("--poll-interval", type=int, default=env_int("APPSCAN_POLL_SECONDS", 15))
     p.add_argument("--timeout-minutes", type=int, default=env_int("APPSCAN_REPORT_TIMEOUT_MINUTES", 60))
 
@@ -233,6 +233,7 @@ def main(argv=None) -> int:
                     app_id = app["Id"]
                     log(f"Using existing application '{app.get('Name')}' (AppId {app_id})", "OK")
                     state_save(app_id=app_id, app_name=app.get("Name"))
+                    (STATE_FILE.parent / "appId.txt").write_text(app_id)
                 else:
                     if not args.app_name:
                         die("--app-name / APPSCAN_APP_NAME is required (or give APPSCAN_APP_ID)")
@@ -240,7 +241,7 @@ def main(argv=None) -> int:
                     asset = client.resolve_asset_group(args.asset_group_id) if not client.find_app(args.app_name) else None
                     app_id = client.get_or_create_app(args.app_name, asset, **extra)
                     state_save(app_id=app_id, app_name=args.app_name)
-                Path("appId.txt").write_text(app_id)  # compatibility with the bash edition
+                (STATE_FILE.parent / "appId.txt").write_text(app_id)  # compatibility with the bash edition
                 print(app_id)
                 return 0
 
@@ -257,8 +258,8 @@ def main(argv=None) -> int:
                 else:
                     from as360.dast import run_dast
                     scan_id = run_dast(client, args)
-                Path("scanId.txt").write_text(scan_id)
-                Path("scanTech.txt").write_text(args.cmd.capitalize())
+                (STATE_FILE.parent / "scanId.txt").write_text(scan_id)
+                (STATE_FILE.parent / "scanTech.txt").write_text(args.cmd.capitalize())
                 return 0
 
             if args.cmd == "report":

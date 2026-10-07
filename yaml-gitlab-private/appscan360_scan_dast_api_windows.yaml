@@ -53,7 +53,7 @@ appscan360-dast-api:
     DAST_PAYLOAD_JSON: ""
   artifacts:
     reports:
-      dast: gl-dast-report.json
+      dast: as360_output/gl-dast-report.json
   script:
     - Invoke-Expression "$env:AS360 app"
     - Invoke-Expression "$env:AS360 dast"

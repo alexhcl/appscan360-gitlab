@@ -130,15 +130,10 @@ variables:
       if (-not $haveRequests -and $pipExit -ne 0) { throw "pip install of requirements.txt failed (exit $pipExit). Install 'requests' on the runner." }
       $env:AS360 = "& `"$py`" `"$env:APPSCAN_SCRIPTS_DIR\appscan360.py`""
       $env:APPSCAN_WORK_DIR = Join-Path $env:TEMP "appscan360-work-$env:CI_JOB_ID"   # IRX/zip scratch outside the source tree
+      $env:APPSCAN_STATE_FILE = Join-Path $env:APPSCAN_WORK_DIR "state.json"           # job state outside the source tree
+      if (-not $env:APPSCAN_REPORT_DIR) { $env:APPSCAN_REPORT_DIR = "as360_output" }   # reports: subfolder of the project (artifacts must be inside it); excluded from scans
       Write-Host "AppScan 360° host: $env:APPSCAN_SERVICE_URL  app: $env:APPSCAN_APP_NAME  scan: $env:APPSCAN_SCAN_NAME  gates: $env:APPSCAN_GATES"
   artifacts:
     when: always
     paths:
-      - "*_report.html"
-      - "*_report.pdf"
-      - "*_report.xml"
-      - "*_issues.*"
-      - "SCA_sbom.*"
-      - ".appscan360/dast_payload.json"
-      - ".appscan360/*.irx"
-      - ".appscan360/presence.log"
+      - "as360_output/"

@@ -131,15 +131,10 @@ variables:
       python3 -c "import requests" 2>/dev/null || pip install -q -r "$APPSCAN_SCRIPTS_DIR/requirements.txt"
       export AS360="python3 $APPSCAN_SCRIPTS_DIR/appscan360.py"
       export APPSCAN_WORK_DIR="${TMPDIR:-/tmp}/appscan360-work-${CI_JOB_ID:-local}"   # IRX/zip scratch outside the source tree
+      export APPSCAN_STATE_FILE="$APPSCAN_WORK_DIR/state.json"                        # job state outside the source tree
+      export APPSCAN_REPORT_DIR="${APPSCAN_REPORT_DIR:-as360_output}"                 # reports: subfolder of the project (artifacts must be inside it); excluded from scans
       echo "AppScan 360° host: $APPSCAN_SERVICE_URL  app: $APPSCAN_APP_NAME  scan: $APPSCAN_SCAN_NAME  gates: $APPSCAN_GATES ($APPSCAN_SEV_SEC_GW <= $APPSCAN_MAX_ISSUES_ALLOWED)"
   artifacts:
     when: always
     paths:
-      - "*_report.html"
-      - "*_report.pdf"
-      - "*_report.xml"
-      - "*_issues.*"
-      - "SCA_sbom.*"
-      - ".appscan360/dast_payload.json"
-      - ".appscan360/*.irx"
-      - ".appscan360/presence.log"
+      - "as360_output/"

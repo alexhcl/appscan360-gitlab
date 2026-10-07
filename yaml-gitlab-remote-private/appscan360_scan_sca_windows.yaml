@@ -37,7 +37,7 @@ appscan360-sca:
     APPSCAN_GATES: "severity,license"
   artifacts:
     reports:
-      dependency_scanning: gl-dependency-scanning-report.json
+      dependency_scanning: as360_output/gl-dependency-scanning-report.json
   script:
     - Invoke-Expression "$env:AS360 app"
     - Invoke-Expression "$env:AS360 sca"
