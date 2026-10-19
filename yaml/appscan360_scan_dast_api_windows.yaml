@@ -38,6 +38,33 @@ appscan360-dast-api:
     DAST_SCAN_PRIORITY: "Regular"
     DAST_EPHEMERAL_PRESENCE: "no"
     DAST_PAYLOAD_JSON: ""
+    # ---- files may also live on the runner (absolute path, outside builds/), e.g. on Windows:
+    # DAST_POSTMAN_COLLECTION: "C:\\appscan360\\collections\\api.postman_collection.json"
+    # DAST_POSTMAN_ENV: "C:\\appscan360\\collections\\api.postman_environment.json"
+    # DAST_OPENAPI_FILE: "C:\\appscan360\\collections\\openapi.yaml"
+    # ---- authentication
+    #  openapi : DAST_API_KEYS="<securityScheme key name>=<value>,..." -> OpenAPI.LoginKeys; the name must match the
+    #            apiKey security scheme declared in the OpenAPI definition (header/query/cookie placement comes from it)
+    #  postman : DAST_API_KEYS is ignored. Put auth in the collection (Authorization tab or headers, e.g. {{api_key}})
+    #            and supply the value through a Postman environment file: DAST_POSTMAN_ENV
+    # DAST_API_KEYS: "$DAST_API_KEYS"       # masked CI/CD variable, e.g. "X-Api-Key=abc"
+    # ---- commonly overridden settings (defaults live in appscan360_base.yaml) -------------------
+    # APPSCAN_APP_ID: ""                   # existing application id (never created); else APPSCAN_APP_NAME + APPSCAN_ASSET
+    # APPSCAN_APP_NAME: $CI_PROJECT_NAME   # application name for lookup / auto-create
+    # APPSCAN_ASSET: ""                    # asset group id or name for auto-create; empty = default group
+    # APPSCAN_RUNNER_TAG: ""               # tag of the runner that can reach AppScan 360°
+    # APPSCAN_SCAN_NAME: $CI_PROJECT_NAME-$CI_JOB_ID
+    # APPSCAN_RESCAN_ID: ""                # re-execute an existing scan instead of creating a new one
+    # APPSCAN_PERSONAL_SCAN: "no"
+    # APPSCAN_TIMEOUT_MINUTES: "360"
+    # APPSCAN_REPORT_FORMATS: "html,xml,gitlab"   # html,pdf,xml,csv,sarif,json,gitlab (+license,sbom for SCA)
+    # APPSCAN_REPORT_DIR: "as360_output"   # artifact folder inside the project (excluded from scans)
+    # ---- gates: fail the job on findings ----------------------------------------------------
+    # APPSCAN_GATES: "threshold"           # severity | threshold | branch | compliance | license (comma list)
+    # APPSCAN_FAILURE_THRESHOLD: "High"    # threshold gate: fail on any High or Critical
+    # APPSCAN_SEV_SEC_GW: "criticalIssues" # severity gate: criticalIssues|highIssues|mediumIssues|lowIssues|totalIssues ...
+    # APPSCAN_MAX_ISSUES_ALLOWED: "0"      # ... allowed count of that severity
+    # APPSCAN_GATE_ALLOW_FAILURE: "no"     # yes = report only, never fail the job
   artifacts:
     reports:
       dast: as360_output/gl-dast-report.json

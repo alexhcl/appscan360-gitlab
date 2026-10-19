@@ -23,6 +23,27 @@ appscan360-sca:
     APPSCAN_REPORT_FORMATS: "html,xml,gitlab,license,sbom"
     APPSCAN_SBOM_FORMAT: "SPDX_Json"     # SPDX_Json | SPDX_Text | CycloneDX_Json | CycloneDX_XML
     APPSCAN_GATES: "severity,license"
+    # ---- commonly overridden settings (defaults live in appscan360_base.yaml) -------------------
+    # APPSCAN_APP_ID: ""                   # existing application id (never created); else APPSCAN_APP_NAME + APPSCAN_ASSET
+    # APPSCAN_APP_NAME: $CI_PROJECT_NAME   # application name for lookup / auto-create
+    # APPSCAN_ASSET: ""                    # asset group id or name for auto-create; empty = default group
+    # APPSCAN_RUNNER_TAG: ""               # tag of the runner that can reach AppScan 360°
+    # APPSCAN_SCAN_NAME: $CI_PROJECT_NAME-$CI_JOB_ID
+    # APPSCAN_RESCAN_ID: ""                # re-execute an existing scan instead of creating a new one
+    # APPSCAN_PERSONAL_SCAN: "no"
+    # APPSCAN_TIMEOUT_MINUTES: "360"
+    # APPSCAN_REPORT_FORMATS: "html,xml,gitlab"   # html,pdf,xml,csv,sarif,json,gitlab (+license,sbom for SCA)
+    # APPSCAN_REPORT_DIR: "as360_output"   # artifact folder inside the project (excluded from scans)
+    # ---- gates: fail the job on findings ----------------------------------------------------
+    # APPSCAN_GATES: "threshold"           # severity | threshold | branch | compliance | license (comma list)
+    # APPSCAN_FAILURE_THRESHOLD: "High"    # threshold gate: fail on any High or Critical
+    # APPSCAN_SEV_SEC_GW: "criticalIssues" # severity gate: criticalIssues|highIssues|mediumIssues|lowIssues|totalIssues ...
+    # APPSCAN_MAX_ISSUES_ALLOWED: "0"      # ... allowed count of that severity
+    # APPSCAN_GATE_ALLOW_FAILURE: "no"     # yes = report only, never fail the job
+  # ---- optional: restore packages before the scan so SCA sees transitive dependencies
+  # before_script:
+  #   - !reference [.appscan360_base, before_script]        # keep the template's setup
+  #   - dotnet restore "$SOLUTION_FILE_PATH"                 # or: mvn dependency:resolve / npm ci
   artifacts:
     reports:
       dependency_scanning: as360_output/gl-dependency-scanning-report.json
